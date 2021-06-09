@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Departments</title>
+    <link rel="stylesheet" href="css\cssDataTable\style.css">
+    <link rel="stylesheet" href="css\cssDataTable\searchbox.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="js/jsDataTable/jquery.dataTables.min.js"></script>
+    <script type="text/javascript">
+        //$.get("http://seif.easttowns.net/hrDepartment/hrDepartmentData", function (data, status) {
+        //    $.each(data, function (index, value) {
+        //        $('#Dep_tbl').append("<tr><td>" + value.DepartmentName + "</td><td>" + value.DepartmentNotes + "</td><td><input type='button' value='Edit' id='btn_EditData' class='button1' onclick='Edit(" + value.DepartmentID + ")'/></td><td><input type='button' value='Delete' id='btn_DelData' class='button1' onclick='Delete($(this).parent().parent().index(), " + value.DepartmentID + ")'/></td></tr>");
+        //    });
+        //});
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: "http://seif.easttowns.net/hrDepartment/hrDepartmentData",
+            processData: false,
+            dataType: "json",
+            success: function (response) {
+                //  alert(response)
+                renderTable(response);
+            },
+            error: function (a, b, c) {
+            }
+        });
+        function renderTable(result) {
+            var dtData = [];
+            $.each(result, function () {
+                dtData.push([
+                    this.DepartmentName
+                    , this.DepartmentNotes
+                ]);
+            });
+            intialtize_Grid(dtData);
+        }
+        function intialtize_Grid(dtData) {
+            $('#Dep_tbl').dataTable({
+                'aaData': dtData,
+                'bPaginate': true,
+                'bInfo': false, 'bDestroy': true,
+                'bFilter': true,
+                'bLengthChange': true,
+                "aoColumns": [
+                    { "bSortable": false, sWidth: '80px' }, { sWidth: '80px' }
+                ],
+                "aaSorting": [[0, "desc"]],
+                'sPaginationType': 'full_numbers',
+                'iDisplayLength': 10,
+                "fnDrawCallback": function () {
+                    if ($("#Dep_tbl").find("tr:not(.ui-widget-header)").length <= 2) {
+                        $('div.dataTables_paginate')[0].style.display = "none";
+                    } else {
+                        $('div.dataTables_paginate')[0].style.display = "block";
+                    }
+                }
+            });
+        }
+        function Add() {
+            var paramters = { "DepartmentID": $("#DepID_txt").val(), "DepartmentName": $("#DepName_txt").val(), "DepartmentNotes": $("#DepNotes_txt").val() }
+            $.ajax({
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                url: "http://seif.easttowns.net/hrDepartment/UpdatehrDepartment",
+                async: true,
+                data: JSON.stringify(paramters),
+                dataType: "json",
+                success: function (data) {
+                    $('#Dep_tbl').append("<tr><td>" + $('#DepName_txt').val() + "</td><td>" + $('#DepNotes_txt').val() + "</td><td><input type='button' value='Edit' id='btn_EditData' class='button1' onclick='Edit(" + data.DepartmentID + ")'/></td><td><input type='button' value='Delete' id='btn_DelData' class='button1' onclick='Delete($(this).parent().parent().index(), " + data.DepartmentID + ")'/></td></tr>");
+                    $('#DepName_txt').val('');
+                    $('#DepNotes_txt').val('');
+                },
+                error: function (result) {
+                    alert("Error, unsuccessful connection");
+                }
+            });
+        }
+        function Edit(DepartmentID) {
+            var paramters = { "departmentID": DepartmentID }
+            $.ajax({
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                url: "http://seif.easttowns.net/hrDepartment/GetDataRow",
+                data: JSON.stringify(paramters),
+                async: true,
+                dataType: "json",
+                success: function (data) {
+                    $("#DepID_txt").val(DepartmentID);
+                    $("#DepName_txt").val(data.DepartmentName);
+                    $("#DepNotes_txt").val(data.DepartmentNotes);
+                },
+                error: function (result) {
+                    alert("Error, unsuccessful operation");
+                }
+            });
+        }
+        function Delete(index, DepartmentID) {
+            var paramters = { "ID": DepartmentID }
+            $.ajax({
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                url: "http://seif.easttowns.net/hrDepartment/Delete_hrDepartment",
+                async: true,
+                data: JSON.stringify(paramters),
+                dataType: "json",
+                success: function (data) {
+                    if (data == 'true') {
+                        document.getElementById("Dep_tbl").deleteRow(index);
+                    }
+                    else
+                        alert(data + ", other connections present.");
+                },
+                error: function (result) {
+                    alert("Error, unsuccessful operation");
+                }
+            });
+        }
+        function Cleartxt() {
+            $("#DepID_txt").val('0');
+            $("#DepName_txt").val('');
+            $("#DepNotes_txt").val('');
+        }
+        function SearchNames() {
+            var input, filter, table, tr, td, i;
+            input = document.getElementById("txt_SearchNames");
+            filter = input.value.toUpperCase();
+            table = document.getElementById("Dep_tbl");
+            tr = table.getElementsByTagName("tr");
+            for (i = 0; i < tr.length; i++) {
+                td = tr[i].getElementsByTagName("td")[0];
+                if (td) {
+                    if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+        function SearchNotes() {
+            var input, filter, table, tr, td, i;
+            input = document.getElementById("txt_SearchNotes");
+            filter = input.value.toUpperCase();
+            table = document.getElementById("Dep_tbl");
+            tr = table.getElementsByTagName("tr");
+            for (i = 0; i < tr.length; i++) {
+                td = tr[i].getElementsByTagName("td")[1];
+                if (td) {
+                    if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+        $('#Dep_tbl').dataTable({
+            "paging": true
+        });
+    </script>
+    <style>
+        .button1 {
+            background-color: #0066ff;
+            border: none;
+            border-radius: 1px;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+        }
+        .button1:active {
+            background-color: #3e8e41;
+            box-shadow: 0 5px #666;
+            transform: translateY(4px);
+        }
+        .button2 {
+            background-color: #0066ff;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            box-shadow: 0 9px #999;
+        }
+        .button2:active {
+            background-color: #3e8e41;
+            box-shadow: 0 5px #666;
+            transform: translateY(4px);
+        }
+        .alignment {
+            text-align: center;
+        }
+        .pagination {
+            display: inline-block;
+        }
+        .pagination a {
+            color: black;
+            float: left;
+            padding: 8px 16px;
+            text-decoration: none;
+            transition: background-color .3s;
+            border: 1px solid #ddd;
+            margin: 0 4px;
+        }
+        .pagination a.active {
+            background-color: #4CAF50;
+            color: white;
+            border: 1px solid #4CAF50;
+        }
+        .pagination a:hover:not(.active) {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <!--<p align="center" style="font-size:30px"><b><u>Departments</u></b></p>-->
+    <table>
+        <td align="center">
+            <input type="text" id="txt_SearchNames" onkeyup="SearchNames()" placeholder="Search Department name..">
+        </td>
+        <td align="center">
+            <input type="text" id="txt_SearchNotes" onkeyup="SearchNotes()" placeholder="Search Department notes..">
+        </td>
+    </table>
+    <table id="Dep_tbl" border="1" align="center" style="width:100%">
+        <thead>
+            <th><b>Department Name</b></th>
+            <th><b>Department Notes</b></th>
+        </thead>
+    </table>
+    <div class="alignment">
+        <div class="pagination">
+            <a href="#">&laquo;</a>
+            <a href="#">1</a>
+            <a href="#">2</a>
+            <a href="#">3</a>
+            <a href="#">4</a>
+            <a href="#">5</a>
+            <a href="#">6</a>
+            <a href="#">&raquo;</a>
+        </div>
+    </div>
+        <table>
+            <tr>
+                <th><b>Add new data</b></th>
+                <td><input type="hidden" id='DepID_txt' value="0"></input></td>
+            </tr>
+            <tr>
+                <td><output>Enter the department name</output></td>
+                <td><input id='DepName_txt' placeholder="Enter the Department name"></input></td>
+                <td><input type="button" value="Clear" id="btn_Cleartxt" onclick="Cleartxt()" class="button2" /></td>
+            </tr>
+            <tr>
+                <td><output>Enter the department notes</output></td>
+                <td><input id='DepNotes_txt' placeholder="Enter the Department notes"></input></td>
+                <td><input type="button" value="Add data" id="btn_AddData" onclick="Add()" class="button2" /></td>
+            </tr>
+        </table>
+</body>
+</html>
